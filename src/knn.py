@@ -15,14 +15,22 @@ class KNearestNeighbors(ClassifierMixin, BaseEstimator):
         self.y_train = np.array(y_train)
         return self
 
+    def _kneighbors_indices(self, X, batch_size=256):
+        """Zwraca indeksy k najbliższych sąsiadów w batchach (oszczędność pamięci)."""
+        n = X.shape[0]
+        indices = np.empty((n, self.k), dtype=np.intp)
+        for start in range(0, n, batch_size):
+            batch = X[start:start + batch_size]
+            dist_batch = distance.cdist(batch, self.X_train, 'euclidean')
+            indices[start:start + batch_size] = dist_batch.argsort()[:, :self.k]
+        return indices
+
     def predict(self, X):
         X = X.toarray() if sp.issparse(X) else np.array(X)
-        distances = distance.cdist(X, self.X_train, 'euclidean')
-        distances_sort = distances.argsort()[:, :self.k]
+        neighbors = self._kneighbors_indices(X)
 
         y_pred = []
-
-        for line in distances_sort:
+        for line in neighbors:
             closest = np.unique(self.y_train[line], return_counts=True)
             most_popular = np.argmax(closest[1])
             y_pred.append(closest[0][most_popular])
@@ -31,11 +39,10 @@ class KNearestNeighbors(ClassifierMixin, BaseEstimator):
 
     def predict_proba(self, X):
         X = X.toarray() if sp.issparse(X) else np.array(X)
-        distances = distance.cdist(X, self.X_train, 'euclidean')
-        distances_sort = distances.argsort()[:, :self.k]
+        neighbors = self._kneighbors_indices(X)
 
         proba = []
-        for line in distances_sort:
+        for line in neighbors:
             p1 = float(np.sum(self.y_train[line] == 1)) / self.k
             proba.append([1.0 - p1, p1])
 

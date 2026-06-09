@@ -9,7 +9,7 @@ Uruchomienie:
 import argparse
 import sys
 from pathlib import Path
-
+import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
@@ -25,14 +25,17 @@ K = 5
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sample", type=int, default=DEFAULT_SAMPLE)
+    parser.add_argument("--sample", type=int, default=DEFAULT_SAMPLE,
+                        help="Rozmiar próbki treningowej. 0 = cały dataset.")
     args = parser.parse_args()
 
     config.ensure_output_dirs()
 
-    print(f"Wczytywanie danych (sample={args.sample})...")
-    train_df = data.load_train(sample=args.sample)
-    test_df = data.load_test(sample=500)
+    train_sample = args.sample if args.sample > 0 else None
+    test_sample = None if train_sample is None else 500
+    print(f"Wczytywanie danych (train_sample={train_sample or 'ALL'}, test_sample={test_sample or 'ALL'})...")
+    train_df = data.load_train(sample=train_sample)
+    test_df = data.load_test(sample=test_sample)
     X_train_text, y_train = data.get_xy(train_df)
     X_test_text, _ = data.get_xy(test_df)
 
@@ -56,7 +59,7 @@ def main() -> None:
     proba_sklearn = sklearn_knn.predict_proba(X_test)[:, 1]
     proba_own = own_knn.predict_proba(X_test)[:, 1]
 
-    import matplotlib.pyplot as plt
+    
     fig, ax = plt.subplots(figsize=(5, 5))
     ax.scatter(proba_sklearn, proba_own, alpha=0.4, s=10)
     ax.plot([0, 1], [0, 1], "r--", linewidth=1)
