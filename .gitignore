@@ -1,0 +1,14 @@
+# Dane z Kaggle (nie commitujemy — duże pliki, licencja konkursu)
+data/*.csv
+data/*.zip
+
+# Wyniki generowane przez skrypty
+outputs/figures/*.png
+outputs/tables/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
